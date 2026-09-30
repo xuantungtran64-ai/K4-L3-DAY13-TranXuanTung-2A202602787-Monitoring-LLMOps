@@ -4,8 +4,8 @@
 
 ## 1. Thông tin học viên
 
-- **Họ và tên:**
-- **MSSV:**
+- **Họ và tên:** Trần Xuân Tùng
+- **MSSV:** 2A202601787
 - **Lớp:** K4-L3B
 - **Repository URL:**
 - **Commit SHA cuối:**
@@ -18,32 +18,32 @@
 
 | Evidence | Đường dẫn |
 |---|---|
-| Pytest cuối | `evidence/01-pytest.png` |
-| Log validator | `evidence/02-log-validator.png` |
-| Dashboard validator | `evidence/03-dashboard-validator.png` |
-| Structured log | `evidence/04-structured-log.png` |
-| PII redaction | `evidence/05-pii-redaction.png` |
-| Trace list | `evidence/06-trace-list.png` |
-| Trace waterfall | `evidence/07-trace-waterfall.png` |
-| Trace metadata | `evidence/08-trace-metadata.png` |
-| Prompt versions | `evidence/09-prompt-versions.png` |
-| Prompt rollback | `evidence/10-prompt-rollback.png` |
-| Dashboard runtime | `evidence/11-dashboard-overview.png` |
-| Incident metric | `evidence/12-incident-metric.png` |
-| Incident log | `evidence/13-incident-log.png` |
-| Incident trace | `evidence/14-incident-trace.png` |
+| Pytest cuối | [01-pytest.png](evidence/01-pytest.png) |
+| Log validator | [02-log-validator.png](evidence/02-log-validator.png) |
+| Dashboard validator | [03-dashboard-validator.png](evidence/03-dashboard-validator.png) |
+| Structured log | [04-structured-log.png](evidence/04-structured-log.png) |
+| PII redaction | [05-pii-redaction.png](evidence/05-pii-redaction.png) |
+| Trace list | [06-trace-list.png](evidence/06-trace-list.png) |
+| Trace waterfall | [07-trace-waterfall.png](evidence/07-trace-waterfall.png) |
+| Trace metadata | [08-trace-metadata.png](evidence/08-trace-metadata.png) |
+| Prompt versions | [09-prompt-versions.png](evidence/09-prompt-versions.png) |
+| Prompt rollback | [10-prompt-rollback.png](evidence/10-prompt-rollback.png) |
+| Dashboard runtime | [11-dashboard-overview.png](evidence/11-dashboard-overview.png) |
+| Incident metric | [12-incident-metric.png](evidence/12-incident-metric.png) |
+| Incident log | [13-incident-log.png](evidence/13-incident-log.png) |
+| Incident trace | [14-incident-trace.png](evidence/14-incident-trace.png) |
 
 ## 3. Kết quả kỹ thuật
 
 | Nội dung | Baseline | Kết quả cuối | Nhận xét |
 |---|---|---|---|
-| `validate_logs.py` | | | |
-| `validate_dashboard.py` | | | |
-| `pytest` | | | |
-| Số traces hợp lệ | | | |
-| Số PII leak | | | |
-| Latency P95 / TTFT P95 | | | |
-| Retrieval success rate | | | |
+| `validate_logs.py` | 30/100 (3 FAILED, 1 PASSED) | | |
+| `validate_dashboard.py` | Hợp lệ 6/6 panel | | |
+| `pytest` | [200] OK nhưng thiếu correlation ID (MISSING) | | |
+| Số traces hợp lệ | 0 unique correlation IDs | | |
+| Số PII leak | 0 | | |
+| Latency P95 / TTFT P95 | Chưa có số liệu chuẩn | | |
+| Retrieval success rate | Chưa có số liệu | | |
 
 ## 4. Logging và PII
 
@@ -54,23 +54,26 @@
 
 ## 5. Tracing và prompt versioning
 
-- **Cách xác nhận traces do chính tôi tạo trong project cá nhân:**
-- **Cấu trúc root/retrieval/generation observations:**
-- **Cách nối trace với log:**
-- **Prompt name:**
-- **Version/label baseline:**
-- **Version/label candidate:**
-- **Trace ID của mỗi version:**
-- **Cách promote và rollback `production`:**
+- **Cách xác nhận traces do chính tôi tạo trong project cá nhân:** Trace được tạo trong project có chứa tên prj (day13-k4-l3b-2A202601787), có thể đối chiếu qua ảnh chụp evidence 06-trace-list.png.
+- **Cấu trúc root/retrieval/generation observations:** Trace có root là day13-agent-request bao bọc bên ngoài. Bên trong là span agent lab-agent-run, chứa 2 span con tuần tự là retrieval (cho RAG) và generation (gọi mô hình)
+- **Cách nối trace với log:** Thông qua correlation_id được sinh ra ở log request. ID này được truyền vào metadata của trace qua propagate_attributes
+- **Prompt name:** day13-chat
+- **Version/label baseline:** V 1, label: baseline, production
+- **Version/label candidate:** V 2, label: candidate
+- **Trace ID của mỗi version:** v1: a50176495f76f43ad76b9adba5fec935 , v2:8d8234d5db630302d01692bbc09d359a
+- **Cách promote và rollback production:** Để Promote, đổi label production sang V2 trên Langfuse UI. Để rollback, xóa ở V2 và đổi nhãn production quay ngược về V1. App sẽ tự động fetch prompt mới vì luôn lấy theo LANGFUSE_PROMPT_LABEL=production
 
 ## 6. Dashboard, SLO và alerts
 
-- **Dashboard và sáu panel:**
-- **SLO và lý do chọn:**
-- **Cách tính error budget:**
+- **Dashboard và sáu panel:** Gồm 6 panel phân tích data/logs.jsonl (latency, traffic, errors, cost, tokens, quality). Mỗi panel có đường threshold giám sát trực quan các chỉ số SLI
+- **SLO và lý do chọn:** Chọn SLO 99.5% cho mục tiêu "fast successful requests" (latency <= 3000ms và không gặp lỗi). Lý do: mức 99.5% là hợp lý cho một trợ lý AI nội bộ, cho phép hệ thống có một lượng error budget nhỏ để cập nhật prompt mới mà không ảnh hưởng nghiêm trọng tới trải nghiệm
+- **Cách tính error budget:** SLO 99.5% trong 28 ngày nghĩa là error budget là 0.5%. Giả sử workload có 14.000 request/28 ngày thì tối đa 70 request được phép lỗi hoặc trả về quá chậm (>3000ms)
 - **Ba alert và runbook tương ứng:**
+  1. HighLatencyP95: báo động khi P95 latency > 3000ms liên tục 5 phút
+  2. HighErrorRate: báo động khi Error Rate > 2% liên tục 3 phút
+  3. LowRetrievalSuccess: báo động khi Retrieval Success < 90% liên tục 10 phút
+  (runbook chi tiết các bước xử lý nằm tại docs/alerts.md)
 
-> Ví dụ cách viết error budget: "SLO 99.5% trong 28 ngày nghĩa là error budget 0.5%. Nếu workload có 10,000 request thì tối đa 50 request được phép lỗi hoặc chậm hơn ngưỡng SLO."
 
 ## 7. Điều tra challenge
 

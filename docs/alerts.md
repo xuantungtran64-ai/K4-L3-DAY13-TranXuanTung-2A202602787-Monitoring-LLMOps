@@ -22,39 +22,48 @@ Ví dụ dưới đây minh họa mức độ cụ thể cần có. Học viên 
 
 ## Alert 1
 
-- Tên:
-- Severity:
-- Duration:
-- Kênh thông báo: Slack
-- SLI/SLO liên quan:
-- Điều kiện và thời gian duy trì:
-- Ảnh hưởng tới người dùng:
+- Tên: `HighLatencyP95`
+- Severity: `high`
+- Duration: `5m`
+- Kênh thông báo: Slack `#alerts-llm`
+- SLI/SLO liên quan: `p95(latency_ms)`
+- Điều kiện và thời gian duy trì: `p95(latency_ms) > 3000ms` trong 5 phút
+- Ảnh hưởng tới người dùng: Người dùng phải chờ quá lâu để nhận được câu trả lời.
 - Ba bước kiểm tra đầu tiên:
-- Mitigation tạm thời:
-- Owner:
+  1. Xem Dashboard Latency để biết thời điểm bắt đầu chậm.
+  2. Lọc log `data/logs.jsonl` tìm các request có `latency_ms` > 3000ms để lấy `correlation_id`.
+  3. Dùng `correlation_id` tra trên Langfuse để xem span nào (retrieval hay generation) bị chậm.
+- Mitigation tạm thời: Rollback version prompt nếu do prompt mới dài hơn. Khởi động lại service nếu do tài nguyên.
+- Owner: `oncall-team`
 
 ## Alert 2
 
-- Tên:
-- Severity:
-- Duration:
-- Kênh thông báo: Slack
-- SLI/SLO liên quan:
-- Điều kiện và thời gian duy trì:
-- Ảnh hưởng tới người dùng:
+- Tên: `HighErrorRate`
+- Severity: `critical`
+- Duration: `3m`
+- Kênh thông báo: Slack `#alerts-llm`
+- SLI/SLO liên quan: Tỉ lệ lỗi tổng (Error Rate)
+- Điều kiện và thời gian duy trì: `error_rate > 2%` trong 3 phút
+- Ảnh hưởng tới người dùng: Người dùng nhận được thông báo lỗi thay vì câu trả lời.
 - Ba bước kiểm tra đầu tiên:
-- Mitigation tạm thời:
-- Owner:
+  1. Xem Dashboard Errors để xác nhận loại lỗi (`error_type`).
+  2. Tìm các dòng log `request_failed` trong `logs.jsonl` để lấy `correlation_id`.
+  3. Kiểm tra Trace trên Langfuse để xem lỗi phát sinh từ bước nào (gọi RAG hay LLM).
+- Mitigation tạm thời: Rollback cấu hình hoặc restart ứng dụng nếu bị kẹt (deadlock). Tắt tính năng mới nếu gây lỗi diện rộng.
+- Owner: `oncall-team`
 
 ## Alert 3
 
-- Tên:
-- Severity:
-- Duration:
-- Kênh thông báo: Slack
-- SLI/SLO liên quan:
-- Điều kiện và thời gian duy trì:
-- Ảnh hưởng tới người dùng:
+- Tên: `LowRetrievalSuccess`
+- Severity: `warning`
+- Duration: `10m`
+- Kênh thông báo: Slack `#alerts-search`
+- SLI/SLO liên quan: Tỉ lệ `tool_success` của retrieval
+- Điều kiện và thời gian duy trì: `retrieval_success < 90%` trong 10 phút
+- Ảnh hưởng tới người dùng: Câu trả lời bị giảm chất lượng hoặc LLM trả lời hallucinate do không có ngữ cảnh từ tài liệu.
 - Ba bước kiểm tra đầu tiên:
-- Mitigation tạm thời:
-- Owner:
+  1. Mở Dashboard Errors xem biểu đồ Retrieval Success Rate.
+  2. Lọc log có `tool_success=false` để lấy `correlation_id`.
+  3. Tra cứu trên Langfuse xem input query là gì và tại sao hệ thống vector store lại fail.
+- Mitigation tạm thời: Khởi động lại dịch vụ vector search (Mock RAG) hoặc tạm thời chuyển về cấu hình fallback.
+- Owner: `search-team`

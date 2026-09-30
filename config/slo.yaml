@@ -7,7 +7,7 @@ primary_slo:
     total_event: 'event == "request_received"'
   target_percent: 99.5
   error_budget_percent: 0.5
-  note: Học viên phải giải thích hoặc điều chỉnh ngưỡng bằng baseline của mình. Ví dụ nếu có 10,000 request trong cửa sổ 28 ngày, error budget 0.5% nghĩa là tối đa 50 request được phép không đạt SLO.
+  note: SLO được đặt ở mức 99.5%, nghĩa là error budget là 0.5%. Giả sử với baseline 500 requests mỗi ngày (khoảng 14,000 requests/28 ngày), hệ thống được phép có tối đa 70 requests gặp lỗi hoặc chạy chậm (latency > 3000ms) trong chu kỳ 28 ngày trước khi vi phạm SLO.
 guardrails:
   error_rate_pct_max: 2
   daily_cost_usd_max: 2.5

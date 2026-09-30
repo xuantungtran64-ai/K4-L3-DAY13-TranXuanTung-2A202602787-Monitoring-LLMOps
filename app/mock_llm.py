@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass
 
 from .incidents import STATE
-
+from .tracing import observe
 
 @dataclass
 class FakeUsage:
@@ -25,6 +25,7 @@ class FakeLLM:
     def __init__(self, model: str = "claude-sonnet-4-5") -> None:
         self.model = model
 
+    @observe(name="generation", as_type="generation")
     def generate(self, prompt: str) -> FakeResponse:
         started = time.perf_counter()
         time.sleep(0.05)  # mô phỏng thời điểm token đầu tiên sẵn sàng
@@ -34,10 +35,24 @@ class FakeLLM:
         output_tokens = random.randint(80, 180)
         if STATE["cost_spike"]:
             output_tokens *= 4
+        
+        cost_usd = round((input_tokens / 1_000_000) * 3 + (output_tokens / 1_000_000) * 15, 6)
+        
         answer = (
             "Starter answer. You should improve this output logic and add better quality checks. "
             "Use retrieved context and keep responses concise."
         )
+        
+        try:
+            from langfuse.decorators import langfuse_context
+            langfuse_context.update_current_observation(
+                model=self.model,
+                usage={"input": input_tokens, "output": output_tokens},
+                cost=cost_usd,
+            )
+        except Exception:
+            pass
+            
         return FakeResponse(
             text=answer,
             usage=FakeUsage(input_tokens, output_tokens),
