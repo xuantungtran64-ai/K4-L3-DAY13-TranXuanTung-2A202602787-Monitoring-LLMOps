@@ -1,56 +1,50 @@
 # Báo cáo cá nhân — K4-L3B Day 13 Monitoring & LLMOps
 
-> Mỗi học viên hoàn thiện một file duy nhất này. Khi dẫn evidence, dùng đường dẫn tương đối, ví dụ `evidence/07-trace-waterfall.png`.
+> Mỗi học viên hoàn thiện một file duy nhất này. Chỉ cần 3 output text và 5 ảnh runtime; dùng đường dẫn tương đối, ví dụ `evidence/03-incident-trace.png`.
 
 ## 1. Thông tin học viên
 
 - **Họ và tên:** Trần Xuân Tùng
 - **MSSV:** 2A202601787
 - **Lớp:** K4-L3B
-- **Repository URL:**
+- **Repository URL:** https://github.com/xuantungtran64-ai/K4-L3-DAY13-TranXuanTung-2A202602787-Monitoring-LLMOps/tree/main
 - **Commit SHA cuối:**
 - **Challenge ID:**
-- **Tên project Langfuse cá nhân:** `day13-k4-l3b-<MSSV>`
+- **Tên project Langfuse cá nhân:** `day13-k4-l3b-2A2026-2787`
 
 ## 2. Evidence index
 
-Điền đúng đường dẫn tới evidence thực tế. Có thể đổi tên hoặc dùng nhiều ảnh nếu cần.
+Giữ đúng ba output text và năm ảnh dưới đây. Không tách thêm ảnh; nếu cần giải thích, ghi bằng chữ trong các mục sau.
 
 | Evidence | Đường dẫn |
 |---|---|
-| Pytest cuối | [01-pytest.png](evidence/01-pytest.png) |
-| Log validator | [02-log-validator.png](evidence/02-log-validator.png) |
-| Dashboard validator | [03-dashboard-validator.png](evidence/03-dashboard-validator.png) |
-| Structured log | [04-structured-log.png](evidence/04-structured-log.png) |
-| PII redaction | [05-pii-redaction.png](evidence/05-pii-redaction.png) |
-| Trace list | [06-trace-list.png](evidence/06-trace-list.png) |
-| Trace waterfall | [07-trace-waterfall.png](evidence/07-trace-waterfall.png) |
-| Trace metadata | [08-trace-metadata.png](evidence/08-trace-metadata.png) |
-| Prompt versions | [09-prompt-versions.png](evidence/09-prompt-versions.png) |
-| Prompt rollback | [10-prompt-rollback.png](evidence/10-prompt-rollback.png) |
-| Dashboard runtime | [11-dashboard-overview.png](evidence/11-dashboard-overview.png) |
-| Incident metric | [12-incident-metric.png](evidence/12-incident-metric.png) |
-| Incident log | [13-incident-log.png](evidence/13-incident-log.png) |
-| Incident trace | [14-incident-trace.png](evidence/14-incident-trace.png) |
+| Pytest cuối | `evidence/pytest.txt` |
+| Log validator | `evidence/log-validator.txt` |
+| Dashboard validator | `evidence/dashboard-validator.txt` |
+| Structured log + incident log | `evidence/01-incident-log.png` |
+| Trace list | `evidence/02-trace-list.png` |
+| Trace waterfall + metadata + incident trace | `evidence/03-incident-trace.png` |
+| Prompt versions + promote/rollback | `evidence/04-prompt-versioning.png` |
+| Dashboard + incident metric | `evidence/05-dashboard-incident.png` |
 
 ## 3. Kết quả kỹ thuật
 
 | Nội dung | Baseline | Kết quả cuối | Nhận xét |
 |---|---|---|---|
-| `validate_logs.py` | 30/100 (3 FAILED, 1 PASSED) | | |
-| `validate_dashboard.py` | Hợp lệ 6/6 panel | | |
-| `pytest` | [200] OK nhưng thiếu correlation ID (MISSING) | | |
-| Số traces hợp lệ | 0 unique correlation IDs | | |
-| Số PII leak | 0 | | |
-| Latency P95 / TTFT P95 | Chưa có số liệu chuẩn | | |
-| Retrieval success rate | Chưa có số liệu | | |
+| `validate_logs.py` | 30/100 (3 FAILED, 1 PASSED) | 100/100 (4 PASSED) | pass toàn bộ tiêu chí |
+| `validate_dashboard.py` | Hợp lệ 6/6 panel | Hợp lệ 6/6 panel | dashboard đủ 6 panel |
+| `pytest` | [200] OK nhưng thiếu correlation ID (MISSING) | 24/24 passed | pass toàn bộ test case |
+| Số traces hợp lệ | 0 unique correlation IDs | 16 unique correlation IDs | request thành công đều được gán id |
+| Số PII leak | 0 | 0 | dữ liệu nhạy cảm đã được loại bỏ |
+| Latency P95 / TTFT P95 | Chưa có số liệu chuẩn | 2873.1 ms / 50.6 ms | nằm trong ngưỡng slo |
+| Retrieval success rate | Chưa có số liệu | 100% | truy vấn cơ sở dữ liệu ổn định |
 
 ## 4. Logging và PII
 
-- **Cách tạo/nhận và truyền correlation ID:**
-- **Các metadata được ghi vào structured log:**
-- **Cách bảo đảm PII được scrub trước khi ghi:**
-- **Cách kiểm chứng kết quả:**
+- **Cách tạo/nhận và truyền correlation ID:** middleware đọc header request hoặc tạo chuỗi ngẫu nhiên mới rồi gán vào structlog để các log sau tự động nhận diện
+- **Các metadata được ghi vào structured log:** ghi thêm user_hash, session_id, feature, model, env vào log thông qua bind_contextvars trong endpoint
+- **Cách bảo đảm PII được scrub trước khi ghi:** cấu hình processor gọi hàm scrub_event để quét và thay thế email số điện thoại cccd thẻ tín dụng theo regex
+- **Cách kiểm chứng kết quả:** chạy tập lệnh validate_logs để kiểm tra file đầu ra đảm bảo không sót dữ liệu nhạy cảm
 
 ## 5. Tracing và prompt versioning
 
@@ -77,33 +71,34 @@
 
 ## 7. Điều tra challenge
 
-- **Challenge ID:**
-- **Khoảng thời gian điều tra:**
-- **Triệu chứng từ metrics:**
-- **Log line và correlation ID liên quan:**
-- **Trace ID và span gây ảnh hưởng:**
-- **Root cause:**
-- **Fix action:**
-- **Preventive measure:**
+- **Challenge ID:** day13-k4-l3b-monitoring-llmops-v1
+- **Khoảng thời gian điều tra:**  11:55 ngày 30/09/2026
+- **Triệu chứng từ metrics:** Latency đo được tại góc nhìn người dùng tăng vọt lên đến 8-13 giây do tắc nghẽn rq. Latency thực tế ở phía backend cho mỗi rq vượt qua 2500ms (vượt quá ngưỡng cho phép 2000ms)
+- **Log line và correlation ID liên quan:** Request bị ảnh hưởng có correlation_id là `req-b6fc58a1`. Dòng log ghi nhận `"latency_ms": 2652`, chứng tỏ request này bị kẹt rất lâu
+- **Trace ID và span gây ảnh hưởng:** Trace ID `7938ccb993a5263b0423d9b37f3bfeab` (của request `req-b6fc58a1`). Span bị chậm là `retrieval` chiếm 2.50s (trong tổng số 2.65s của cả trace)
+- **Root cause:** Lỗi do logic truy xuất cơ sở dữ liệu RAG (bước `retrieval`) bị chậm bất thường, gây nghẽn toàn bộ luồng xử lý của Agent
+- **Fix action:** Tối ưu hóa lại truy vấn RAG, kiểm tra trạng thái của Vector Database
+- **Preventive measure:** Bổ sung alert cảnh báo ngay khi P95 Latency vượt 2000ms. Thiết lập timeout hợp lý cho bước `retrieval` để không làm treo toàn bộ ứng dụng khi DB bị chậm.
 
-> Gợi ý cách viết ngắn, không thay cho evidence thực tế: "Metric cho thấy `[latency/error/cost/quality]` bất thường trong `[khoảng thời gian]`. Log line `[event]` có `correlation_id=[...]` đại diện cho request bị ảnh hưởng. Trace cùng `correlation_id` cho thấy span `[retrieval/generation/prompt/tool]` có dấu hiệu `[chậm/lỗi/token tăng]`. Root cause là `[nguyên nhân suy ra từ evidence]`. Fix action là `[hành động khôi phục]`; preventive measure là `[alert/runbook/test/guardrail để ngăn tái diễn]`."
 
 ## 8. Giải thích và tự đánh giá
 
-- **Một quyết định kỹ thuật quan trọng và lý do:**
-- **Một lỗi/blocker đã gặp:**
-- **Cách tìm nguyên nhân và xử lý:**
-- **Cách hiểu luồng Metrics → Logs → Traces:**
-- **Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM:**
-- **Điều quan trọng nhất đã học:**
-- **Hạn chế hoặc phần chưa hoàn thành, nếu có:**
+- **Một quyết định kỹ thuật quan trọng và lý do:** sử dụng processor để xử lý log tập trung cho việc xoá pii và format jsonl giúp giảm code thừa ở các hàm xử lý
+- **Một lỗi/blocker đã gặp:** import lỗi khi chạy test do thiếu đường dẫn
+- **Cách tìm nguyên nhân và xử lý:** Đọc thông báo lỗi và thêm biến môi trường vào trước lệnh test để ứng dụng nhận diện được đường dẫn
+- **Cách hiểu luồng Metrics → Logs → Traces:** metrics báo hiệu biến động tổng quan logs giúp khoanh vùng thời điểm và traces soi chi tiết từng bước bên trong request để bắt đúng hàm gây nghẽn
+- **Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM:** giám sát cost tối ưu ngân sách còn slo định lượng rủi ro cho phép hệ thống có cơ chế rollback phục hồi nhanh khi prompt mới gặp sự cố
+- **Điều quan trọng nhất đã học:** cách kết hợp các công cụ observability để giám sát vòng đời một ứng dụng ai
+- **Hạn chế hoặc phần chưa hoàn thành, nếu có:** chưa bắt hết các định dạng dữ liệu nhạy cảm phức tạp
 
 ## 9. Checklist trước khi nộp
 
 - [ ] Kết quả và evidence thuộc commit SHA cuối.
 - [ ] Tất cả ảnh/output mở được bằng đường dẫn tương đối.
+- [ ] Có đúng 3 file text và 5 ảnh runtime theo hướng dẫn.
 - [ ] Incident evidence nối đúng metric → log → trace.
 - [ ] Trace/prompt evidence thuộc project Langfuse cá nhân và ảnh không lộ key/secret.
 - [ ] Repository chạy lại được theo README.
 - [ ] Không có secret, API key, PII thô hoặc evidence của người khác/lớp khác.
 - [ ] URL repo và commit SHA cuối đã được nộp trên LMS/Codelabs.
+
